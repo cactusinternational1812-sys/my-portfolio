@@ -1,63 +1,61 @@
-require("dotenv").config();
+const form = document.getElementById("contactForm");
 
-const express = require("express");
-const { Pool } = require("pg");
-const cors = require("cors");
+form.addEventListener("submit", function (event) {
+  event.preventDefault();
 
-const app = express();
+  // Get values from the form
+  const name = form.elements[0].value;
+  const email = form.elements[1].value;
+  const message = form.elements[2].value;
 
-app.use(cors());
-app.use(express.json());
+  const data = { name, email, message };
 
-// PostgreSQL Connection using .env
-const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT,
-});
-
-// Check PostgreSQL connection
-pool.connect()
-  .then(client => {
-    console.log("PostgreSQL Connected Successfully ✅");
-    client.release();
+  // Send data to the backend running on port 5000
+  fetch("http://localhost:5000/contact", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(data)
   })
-  .catch(err => {
-    console.error("PostgreSQL Connection Failed ❌", err.message);
-  });
-
-// Test route
-app.get("/", (req, res) => {
-  res.send("Server is running successfully 🚀");
-});
-
-// Contact form route
-app.post("/contact", async (req, res) => {
-  try {
-    console.log("Received Data:", req.body); // Debugging line
-
-    const { name, email, message } = req.body;
-
-    if (!name || !email || !message) {
-      return res.status(400).send("All fields are required ❗");
+  .then(async function (response) {
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(err);
     }
-
-    await pool.query(
-      "INSERT INTO messages (name, email, message) VALUES ($1, $2, $3)",
-      [name, email, message]
-    );
-
-    res.status(200).send("Message saved successfully ✅");
-
-  } catch (err) {
-    console.error("Error inserting data ❌", err.message);
-    res.status(500).send("Error occurred while saving data");
-  }
+    return response.json();
+  })
+  .then(function (result) {
+    alert("Message sent succesfully  ");
+    form.reset();
+  })
+  .catch(function (err) {
+    console.error(err);
+    alert("Error occurred ");
+  });
 });
 
-// Start server
-app.listen(3000, () => {
-  console.log("Server running on port 3000");
+document.getElementById("contactForm").addEventListener("submit", async function(e) {
+    e.preventDefault(); // stop page refresh
+
+    const name = document.querySelector('input[name="name"]').value;
+    const email = document.querySelector('input[name="email"]').value;
+    const message = document.querySelector('textarea[name="message"]').value;
+
+    try {
+        const response = await fetch("http://localhost:5000/contact", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ name, email, message })
+        });
+
+        const result = await response.text();
+        alert(result);
+} catch (error) {
+        alert("Error occurred while sending message ❌");
+        console.error(error);
+    }
+    
 });

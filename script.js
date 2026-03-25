@@ -1,32 +1,36 @@
 const form = document.getElementById("contactForm");
 
-if (form) {
-  form.addEventListener("submit", async function (e) {
-    e.preventDefault(); // 🚀 stops reload
+form.addEventListener("submit", function (event) {
+  event.preventDefault();
 
-    console.log("Form submitted"); // 👈 DEBUG LINE
+  // Get values from the form
+  const name = form.elements[0].value;
+  const email = form.elements[1].value;
+  const message = form.elements[2].value;
 
-    const name = document.querySelector('input[name="name"]').value;
-    const email = document.querySelector('input[name="email"]').value;
-    const message = document.querySelector('textarea[name="message"]').value;
+  const data = { name, email, message };
 
-    try {
-      const response = await fetch("http://localhost:5000/contact", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ name, email, message })
-      });
-
-      if (!response.ok) throw new Error("Failed");
-
-      alert("Message sent successfully ✅");
-      form.reset();
-
-    } catch (error) {
-      console.error(error);
-      alert("Error occurred ❌");
+  // Send data to the backend running on port 5000
+  fetch("http://localhost:5000/contact", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(data)
+  })
+  .then(async function (response) {
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(err);
     }
+    return response.json();
+  })
+  .then(function (result) {
+    alert("Message sent succesfully  ");
+    form.reset();
+  })
+  .catch(function (err) {
+    console.error(err);
+    alert("Error occurred ");
   });
-}
+});
